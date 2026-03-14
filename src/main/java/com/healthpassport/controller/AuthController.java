@@ -1,61 +1,72 @@
 package com.healthpassport.controller;
 
-import com.healthpassport.model.Patient;
-import com.healthpassport.repository.PatientRepository;
-import com.healthpassport.service.OtpService;
-
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin
 public class AuthController {
 
-    private final OtpService otpService;
-    private final PatientRepository patientRepo;
-
-    public AuthController(OtpService otpService, PatientRepository patientRepo){
-        this.otpService = otpService;
-        this.patientRepo = patientRepo;
-    }
+    private Map<String,String> otpStore = new HashMap<>();
 
     /* SEND OTP */
 
     @PostMapping("/send-otp")
-    public Map<String,String> sendOtp(@RequestBody Map<String,String> req){
+    public Map<String,String> sendOtp(@RequestBody Map<String,String> body){
 
-        String email = req.get("email");
+        String phone = body.get("phone");
 
-        otpService.sendOtp(email);
+        String otp = String.valueOf(new Random().nextInt(900000)+100000);
 
-        return Map.of("status","OTP_SENT");
+        otpStore.put(phone,otp);
+
+        System.out.println("OTP for "+phone+" : "+otp);
+
+        return Map.of("message","OTP Sent");
     }
 
     /* VERIFY OTP */
 
     @PostMapping("/verify-otp")
-    public Map<String,String> verifyOtp(@RequestBody Map<String,String> req){
+    public Map<String,String> verifyOtp(@RequestBody Map<String,String> body){
 
-        String email = req.get("email");
-        String otp = req.get("otp");
+        String phone = body.get("phone");
+        String otp = body.get("otp");
 
-        boolean valid = otpService.verifyOtp(email,otp);
+        if(otp.equals(otpStore.get(phone))){
 
-        if(valid){
-            return Map.of("status","SUCCESS");
+            return Map.of("message","OTP Verified");
+
         }
 
-        return Map.of("status","FAILED");
+        return Map.of("message","Invalid OTP");
+
+    }
+
+    /* LOGIN */
+
+    @PostMapping("/login")
+    public Map<String,String> login(@RequestBody Map<String,String> body){
+
+        String role = body.get("role");
+
+        return Map.of(
+                "message","Login success",
+                "role",role
+        );
+
     }
 
     /* REGISTER */
 
     @PostMapping("/register")
-    public Patient register(@RequestBody Patient patient){
+    public Map<String,String> register(@RequestBody Map<String,String> body){
 
-        return patientRepo.save(patient);
+        return Map.of("message","User registered");
 
     }
 
